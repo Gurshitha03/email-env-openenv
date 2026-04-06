@@ -1,0 +1,24 @@
+name: email-env
+description: Email classification environment for spam, important and urgent emails
+version: 1.0
+
+observation:
+  type: object
+  properties:
+    email:
+      type: string
+
+action:
+  type: object
+  properties:
+    category:
+      type: string
+      enum: [spam, important, urgent]
+
+reward:
+  type: float
+
+tasks:
+  - easy
+  - medium
+  - hard
