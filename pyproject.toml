@@ -7,8 +7,12 @@ requires-python = ">=3.10"
 
 dependencies = [
     "pydantic",
-    "openai"
+    "openai",
+    "openenv>=0.2.0"
 ]
+
+[project.scripts]
+server = "server.app:app"
 
 [tool.openenv]
 entrypoint = "my_env:EmailEnv"
