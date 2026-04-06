@@ -1,0 +1,14 @@
+[project]
+name = "email-env"
+version = "0.1.0"
+description = "Email triage OpenEnv environment"
+authors = [{name = "Gurshitha"}]
+requires-python = ">=3.10"
+
+dependencies = [
+    "pydantic",
+    "openai"
+]
+
+[tool.openenv]
+entrypoint = "my_env:EmailEnv"
