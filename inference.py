@@ -1,4 +1,5 @@
 import os
+import json
 from openai import OpenAI
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from my_env import EmailEnv, grade
@@ -14,13 +15,19 @@ client = OpenAI(
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 TASKS = ["easy", "medium", "hard"]
 
+# global env for OpenEnv endpoints
+env = EmailEnv(task="easy")
 
+
+# ----------------------------
+# Run baseline tasks
+# ----------------------------
 def run_tasks():
 
     for task in TASKS:
 
-        env = EmailEnv(task=task)
-        obs = env.reset()
+        env_local = EmailEnv(task=task)
+        obs = env_local.reset()
 
         print(f"[START] task={task} env=email-env model={MODEL_NAME}")
 
@@ -42,11 +49,6 @@ You are an AI email assistant.
 Classify the email into EXACTLY ONE WORD:
 spam, important, urgent
 
-Also internally decide action:
-spam -> delete
-important -> mark-read
-urgent -> notify
-
 Return ONLY ONE WORD.
 
 Email: {email}
@@ -57,7 +59,7 @@ Email: {email}
                 action = response.choices[0].message.content.strip().lower()
                 action = action.split()[0]
 
-                obs, reward, done, info = env.step({"category": action})
+                obs, reward, done, info = env_local.step({"category": action})
                 rewards.append(reward)
 
                 print(
@@ -68,7 +70,7 @@ Email: {email}
                 if done:
                     break
 
-            final_score = grade(task, env.predictions)
+            final_score = grade(task, env_local.predictions)
             success = final_score > 0.6
 
         except Exception as e:
@@ -87,26 +89,61 @@ Email: {email}
 
 
 # ----------------------------
-# Simple UI Server
+# OpenEnv HTTP Server
 # ----------------------------
 class Handler(BaseHTTPRequestHandler):
+
+    def do_POST(self):
+
+        global env
+
+        if self.path == "/reset":
+            obs = env.reset()
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(json.dumps(obs).encode())
+
+        elif self.path == "/step":
+            length = int(self.headers['Content-Length'])
+            data = json.loads(self.rfile.read(length))
+
+            obs, reward, done, info = env.step(data)
+
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "observation": obs,
+                "reward": reward,
+                "done": done,
+                "info": info
+            }).encode())
+
     def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-        self.wfile.write(b"""
-        <h2>Email Triage OpenEnv Running</h2>
-        <p>Check the Logs tab for evaluation output.</p>
-        """)
+
+        if self.path == "/state":
+            state = env.state()
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(json.dumps(state).encode())
+
+        else:
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"""
+            <h2>Email Triage OpenEnv Running</h2>
+            <p>Check Logs tab for evaluation output.</p>
+            """)
 
 
+# ----------------------------
+# Start
+# ----------------------------
 if __name__ == "__main__":
 
-    # run once
     run_tasks()
 
-    # keep space alive
     PORT = 7860
     print(f"Serving at port {PORT}")
 
-    HTTPServer(("", PORT), Handler).serve_forever()
+    HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
