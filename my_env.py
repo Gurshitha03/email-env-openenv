@@ -77,7 +77,7 @@ class EmailEnv:
 
         self.predictions.append(pred)
 
-        # NEVER return 0 or 1
+        # NEVER 0 or 1
         if pred == correct:
             reward = 0.9
         elif correct == "urgent" and pred == "important":
@@ -120,8 +120,11 @@ def grade(task, predictions):
 
     final_score = score / len(correct)
 
-    # STRICTLY BETWEEN (0,1)
+    # STRICTLY inside (0,1)
     eps = 1e-6
-    final_score = max(eps, min(final_score, 1 - eps))
+    if final_score <= 0:
+        final_score = eps
+    elif final_score >= 1:
+        final_score = 1 - eps
 
-    return final_score
+    return float(f"{final_score:.6f}")
