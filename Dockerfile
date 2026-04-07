@@ -8,8 +8,7 @@ COPY . .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Environment variables (optional defaults)
 ENV PYTHONUNBUFFERED=1
 
-# Run the inference script
-CMD ["python", "inference.py"]
+# Run OpenEnv server (NOT inference)
+CMD ["python", "server/app.py"]
