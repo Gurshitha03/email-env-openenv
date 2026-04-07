@@ -54,23 +54,16 @@ class EmailEnv:
         else:
             raise ValueError("Invalid task")
 
-        # shuffle for randomness
         random.shuffle(self.emails)
 
         self.index = 0
         self.predictions = []
 
-    # ----------------------------
-    # Reset
-    # ----------------------------
     def reset(self):
         self.index = 0
         self.predictions = []
         return {"email": self.emails[self.index]["text"]}
 
-    # ----------------------------
-    # State (required by OpenEnv)
-    # ----------------------------
     def state(self):
         return {
             "task": self.task,
@@ -78,23 +71,21 @@ class EmailEnv:
             "predictions": self.predictions
         }
 
-    # ----------------------------
-    # Step
-    # ----------------------------
     def step(self, action):
         correct = self.emails[self.index]["label"]
         pred = action["category"]
 
         self.predictions.append(pred)
 
+        # IMPORTANT: never return 0 or 1
         if pred == correct:
-            reward = 1.0
+            reward = 0.9
         elif correct == "urgent" and pred == "important":
             reward = 0.7
         elif correct == "important" and pred == "urgent":
             reward = 0.6
         else:
-            reward = 0.0
+            reward = 0.1
 
         self.index += 1
         done = self.index >= len(self.emails)
@@ -115,22 +106,16 @@ def grade(task, predictions):
     }
 
     correct = correct_answers[task]
-    score = 0
+    score = 0.0
 
     for p, c in zip(predictions, correct):
         if p == c:
-            score += 1.0
+            score += 0.9
         elif c == "urgent" and p == "important":
             score += 0.7
         elif c == "important" and p == "urgent":
             score += 0.6
+        else:
+            score += 0.1
 
-    final_score = score / len(correct)
-
-    # ✅ IMPORTANT: must be strictly between (0,1)
-    if final_score >= 1.0:
-        final_score = 0.99
-    elif final_score <= 0.0:
-        final_score = 0.01
-
-    return final_score
+    return score / len(correct)
