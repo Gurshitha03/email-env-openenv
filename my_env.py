@@ -125,4 +125,12 @@ def grade(task, predictions):
         elif c == "important" and p == "urgent":
             score += 0.6
 
-    return score / len(correct)
+    final_score = score / len(correct)
+
+    # ✅ IMPORTANT: must be strictly between (0,1)
+    if final_score >= 1.0:
+        final_score = 0.99
+    elif final_score <= 0.0:
+        final_score = 0.01
+
+    return final_score
