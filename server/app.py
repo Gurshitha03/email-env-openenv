@@ -1,8 +1,14 @@
+import sys
+import os
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 from my_env import EmailEnv
 
 env = EmailEnv(task="easy")
+
 
 class Handler(BaseHTTPRequestHandler):
 
@@ -40,6 +46,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"OpenEnv running")
+
 
 def main():
     PORT = 7860
