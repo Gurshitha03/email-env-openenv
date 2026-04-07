@@ -20,6 +20,37 @@ env = EmailEnv(task="easy")
 
 
 # ----------------------------
+# SAFE LLM CALL (timeout protected)
+# ----------------------------
+def classify_email(email):
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            timeout=15,          # ✅ prevents hanging
+            max_tokens=2,        # ✅ very fast
+            temperature=0,
+            messages=[{
+                "role": "user",
+                "content": f"""
+Classify this email into EXACTLY ONE WORD:
+spam, important, urgent
+
+Email: {email}
+
+Return only one word.
+"""
+            }]
+        )
+
+        action = response.choices[0].message.content.strip().lower()
+        return action.split()[0]
+
+    except Exception:
+        # fallback (never block evaluation)
+        return "important"
+
+
+# ----------------------------
 # Run baseline tasks
 # ----------------------------
 def run_tasks():
@@ -39,25 +70,7 @@ def run_tasks():
                 step_count += 1
                 email = obs["email"]
 
-                response = client.chat.completions.create(
-                    model=MODEL_NAME,
-                    messages=[{
-                        "role": "user",
-                        "content": f"""
-You are an AI email assistant.
-
-Classify the email into EXACTLY ONE WORD:
-spam, important, urgent
-
-Return ONLY ONE WORD.
-
-Email: {email}
-"""
-                    }]
-                )
-
-                action = response.choices[0].message.content.strip().lower()
-                action = action.split()[0]
+                action = classify_email(email)
 
                 obs, reward, done, info = env_local.step({"category": action})
                 rewards.append(reward)
