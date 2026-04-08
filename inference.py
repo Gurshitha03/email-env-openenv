@@ -14,6 +14,11 @@ MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 TASKS = ["easy", "medium", "hard"]
 
 
+def clamp(x):
+    eps = 1e-6
+    return max(eps, min(x, 1 - eps))
+
+
 # ----------------------------
 # SAFE LLM CALL
 # ----------------------------
@@ -57,6 +62,7 @@ for task in TASKS:
             action = classify_email(obs["email"])
             obs, reward, done, info = env.step({"category": action})
 
+            reward = clamp(reward)
             rewards.append(reward)
 
             print(
@@ -67,14 +73,16 @@ for task in TASKS:
             if done:
                 break
 
-        final_score = grade(task, env.predictions)
+        final_score = clamp(grade(task, env.predictions))
         success = final_score > 0.6
 
     except Exception as e:
         success = False
+        safe_reward = 0.000001
+
         print(
             f"[STEP] step={step_count} action=error "
-            f"reward=0.00 done=true error={str(e)}"
+            f"reward={safe_reward:.2f} done=true error={str(e)}"
         )
 
     rewards_str = ",".join([f"{r:.2f}" for r in rewards])

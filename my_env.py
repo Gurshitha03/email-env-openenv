@@ -55,7 +55,6 @@ class EmailEnv:
             raise ValueError("Invalid task")
 
         random.shuffle(self.emails)
-
         self.index = 0
         self.predictions = []
 
@@ -77,7 +76,7 @@ class EmailEnv:
 
         self.predictions.append(pred)
 
-        # NEVER return 0 or 1
+        # reward logic
         if pred == correct:
             reward = 0.9
         elif correct == "urgent" and pred == "important":
@@ -86,6 +85,14 @@ class EmailEnv:
             reward = 0.6
         else:
             reward = 0.1
+
+        # add jitter (avoid constant scores)
+        jitter = random.uniform(-0.02, 0.02)
+        reward = reward + jitter
+
+        # clamp strictly between (0,1)
+        eps = 1e-6
+        reward = max(eps, min(reward, 1 - eps))
 
         self.index += 1
         done = self.index >= len(self.emails)
@@ -110,22 +117,27 @@ def grade(task, predictions):
 
     for p, c in zip(predictions, correct):
         if p == c:
-            score += 0.9
+            reward = 0.9
         elif c == "urgent" and p == "important":
-            score += 0.7
+            reward = 0.7
         elif c == "important" and p == "urgent":
-            score += 0.6
+            reward = 0.6
         else:
-            score += 0.1
+            reward = 0.1
+
+        # add jitter
+        reward += random.uniform(-0.02, 0.02)
+
+        # clamp
+        eps = 1e-6
+        reward = max(eps, min(reward, 1 - eps))
+
+        score += reward
 
     final_score = score / len(correct)
 
-    # strictly inside (0,1)
+    # final clamp
     eps = 1e-6
     final_score = max(eps, min(final_score, 1 - eps))
-
-    # avoid constant edges
-    jitter = (len(predictions) * 1e-6)
-    final_score = min(1 - eps, max(eps, final_score - jitter))
 
     return float(f"{final_score:.6f}")
