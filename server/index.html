@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Email Triage OpenEnv</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #172554;
+      background:
+        radial-gradient(circle at 5% 65%, #ddd6fe 0, transparent 22%),
+        radial-gradient(circle at 98% 55%, #dbeafe 0, transparent 22%),
+        linear-gradient(135deg, #f8faff, #eef4ff);
+      min-height: 100vh;
+    }
+    /* =========================
+       HEADER
+    ========================= */
+    header {
+      position: relative;
+      overflow: hidden;
+      padding: 32px 20px 42px;
+      text-align: center;
+      background:
+        radial-gradient(circle at 10% 80%, #bfdbfe 0, transparent 25%),
+        radial-gradient(circle at 90% 20%, #e9d5ff 0, transparent 28%),
+        linear-gradient(
+          120deg,
+          #dbeafe,
+          #e0e7ff,
+          #f3e8ff
+        );
+      border-bottom: 1px solid #c7d2fe;
+    }
+    header::before {
+      content: "✦";
+      position: absolute;
+      left: 23%;
+      top: 25px;
+      font-size: 24px;
+      color: #a78bfa;
+      opacity: 0.7;
+    }
+    header::after {
+      content: "✦";
+      position: absolute;
+      right: 22%;
+      top: 40px;
+      font-size: 30px;
+      color: #93c5fd;
+      opacity: 0.7;
+    }
+    header h1 {
+      position: relative;
+      z-index: 2;
+      margin: 0;
+      font-size: 34px;
+      font-weight: 800;
+      color: #172554;
+    }
+    header h1 span {
+      color: #7c3aed;
+    }
+    header p {
+      position: relative;
+      z-index: 2;
+      margin: 10px 0 0;
+      font-size: 17px;
+      color: #475569;
+    }
+    /* =========================
+       MAIN
+    ========================= */
+    .container {
+      width: 90%;
+      max-width: 850px;
+      margin: 38px auto;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 22px;
+      padding: 30px;
+      margin-bottom: 24px;
+      box-shadow:
+        0 12px 35px rgba(99, 102, 241, 0.10),
+        0 3px 10px rgba(148, 163, 184, 0.08);
+      backdrop-filter: blur(10px);
+    }
+    /* =========================
+       LABEL + SELECT
+    ========================= */
+    label {
+      display: block;
+      margin-bottom: 9px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #172554;
+    }
+    select {
+      width: 100%;
+      padding: 14px 15px;
+      margin-bottom: 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #1e293b;
+      font-size: 16px;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus {
+      border-color: #a78bfa;
+      box-shadow:
+        0 0 0 3px rgba(167, 139, 250, 0.15);
+    }
+    /* =========================
+       BUTTONS
+    ========================= */
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease;
+    }
+    button:hover {
+      transform: translateY(-2px);
+    }
+    /* Start button */
+    .start {
+      width: 100%;
+      color: white;
+      background:
+        linear-gradient(
+          100deg,
+          #60a5fa,
+          #818cf8,
+          #a78bfa
+        );
+      box-shadow:
+        0 8px 18px rgba(129, 140, 248, 0.25);
+    }
+    .start:hover {
+      box-shadow:
+        0 12px 24px rgba(129, 140, 248, 0.32);
+    }
+    /* =========================
+       INCOMING EMAIL
+    ========================= */
+    .email-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 0;
+      margin-bottom: 18px;
+      font-size: 25px;
+      color: #172554;
+    }
+    .email-box {
+      background:
+        linear-gradient(
+          135deg,
+          #eff6ff,
+          #e0f2fe
+        );
+      border-left: 5px solid #60a5fa;
+      padding: 20px;
+      border-radius: 12px;
+      font-size: 18px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+      color: #1e3a5f;
+      min-height: 70px;
+    }
+    /* =========================
+       CLASSIFICATION
+    ========================= */
+    h3 {
+      margin-bottom: 14px;
+      color: #172554;
+      font-size: 18px;
+    }
+    .buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .buttons button {
+      flex: 1;
+      min-width: 180px;
+    }
+    /* Spam */
+    .spam {
+      background: #ffe4e6;
+      color: #be123c;
+      border: 1px solid #fecdd3;
+    }
+    .spam:hover {
+      background: #fecdd3;
+      box-shadow:
+        0 8px 18px rgba(244, 63, 94, 0.15);
+    }
+    /* Important */
+    .important {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .important:hover {
+      background: #fde68a;
+      box-shadow:
+        0 8px 18px rgba(245, 158, 11, 0.15);
+    }
+    /* Urgent */
+    .urgent {
+      background: #ffedd5;
+      color: #c2410c;
+      border: 1px solid #fed7aa;
+    }
+    .urgent:hover {
+      background: #fed7aa;
+      box-shadow:
+        0 8px 18px rgba(249, 115, 22, 0.15);
+    }
+    /* =========================
+       RESULT
+    ========================= */
+    .result {
+      margin-top: 20px;
+      padding: 18px 20px;
+      border-radius: 12px;
+      background:
+        linear-gradient(
+          135deg,
+          #f8fafc,
+          #f1f5f9
+        );
+      border: 1px solid #e2e8f0;
+      color: #334155;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+    .score {
+      margin-top: 17px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #172554;
+    }
+    .status {
+      margin-top: 12px;
+      text-align: center;
+      color: #64748b;
+      font-size: 15px;
+    }
+    /* =========================
+       RESPONSIVE
+    ========================= */
+    @media (max-width: 650px) {
+      header {
+        padding: 28px 15px 35px;
+      }
+      header h1 {
+        font-size: 26px;
+      }
+      header p {
+        font-size: 15px;
+      }
+      .container {
+        width: 94%;
+        margin: 22px auto;
+      }
+      .card {
+        padding: 22px;
+        border-radius: 18px;
+      }
+      .buttons {
+        flex-direction: column;
+      }
+      .buttons button {
+        width: 100%;
+      }
+      .email-title {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =========================
+       HEADER
+  ========================== -->
+
+  <header>
+
+    <h1>
+      📧 Email Triage <span>OpenEnv</span>
+    </h1>
+
+    <p>
+      AI Email Classification Environment
+    </p>
+
+  </header>
+
+
+  <!-- =========================
+       MAIN
+  ========================== -->
+
+  <div class="container">
+
+
+    <!-- TASK CARD -->
+
+    <div class="card">
+
+      <label for="task">
+        Select Difficulty
+      </label>
+
+      <select id="task">
+
+        <option value="easy">
+          Easy — Spam Detection
+        </option>
+
+        <option value="medium">
+          Medium — Important Email Detection
+        </option>
+
+        <option value="hard">
+          Hard — Urgent / Security Detection
+        </option>
+
+      </select>
+
+      <button
+        class="start"
+        onclick="startTask()"
+      >
+        🚀 Start Task
+      </button>
+
+    </div>
+
+
+    <!-- EMAIL CARD -->
+
+    <div class="card">
+
+      <h2 class="email-title">
+        💌 Incoming Email
+      </h2>
+
+      <div
+        class="email-box"
+        id="email"
+      >
+        Select a difficulty and click
+        Start Task.
+      </div>
+
+
+      <h3>
+        Classify this email
+      </h3>
+
+
+      <div class="buttons">
+
+        <button
+          class="spam"
+          onclick="classify('spam')"
+        >
+          🗑️ Spam
+        </button>
+
+        <button
+          class="important"
+          onclick="classify('important')"
+        >
+          ⭐ Important
+        </button>
+
+        <button
+          class="urgent"
+          onclick="classify('urgent')"
+        >
+          🚨 Urgent
+        </button>
+
+      </div>
+
+
+      <div
+        class="result"
+        id="result"
+      >
+        Your classification result
+        will appear here.
+      </div>
+
+
+      <div
+        class="score"
+        id="progress"
+      >
+        Emails classified: 0 / 5
+      </div>
+
+
+      <div
+        class="status"
+        id="status"
+      >
+        OpenEnv ready
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================
+       JAVASCRIPT
+  ========================== -->
+
+  <script>
+    let count = 0;
+    async function startTask() {
+      const task =
+        document.getElementById("task").value;
+      try {
+        const response =
+          await fetch("/reset", {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            body: JSON.stringify({
+              task: task
+            })
+          });
+        const data =
+          await response.json();
+        count = 0;
+        document.getElementById(
+          "email"
+        ).textContent =
+          data.email ||
+          "No email available";
+        document.getElementById(
+          "result"
+        ).textContent =
+          "Choose Spam, Important, or Urgent.";
+        document.getElementById(
+          "progress"
+        ).textContent =
+          "Emails classified: 0 / 5";
+        document.getElementById(
+          "status"
+        ).textContent =
+          "Task started — " + task;
+      } catch (error) {
+        document.getElementById(
+          "status"
+        ).textContent =
+          "Unable to connect to OpenEnv.";
+        console.error(error);
+      }
+    }
+    async function classify(category) {
+      try {
+        const response =
+          await fetch("/step", {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            body: JSON.stringify({
+              category: category,
+              response: category
+            })
+          });
+        const data =
+          await response.json();
+        count++;
+        const reward =
+          Number(data.reward || 0);
+        document.getElementById(
+          "result"
+        ).innerHTML =
+          "Your classification: <b>" +
+          category +
+          "</b><br>" +
+          "Reward: <b>" +
+          reward.toFixed(3) +
+          "</b>";
+        document.getElementById(
+          "progress"
+        ).textContent =
+          "Emails classified: " +
+          count +
+          " / 5";
+        if (data.done) {
+          document.getElementById(
+            "email"
+          ).textContent =
+            "🎉 Task completed!";
+          document.getElementById(
+            "status"
+          ).textContent =
+            "All emails classified.";
+        }
+        else {
+          document.getElementById(
+            "email"
+          ).textContent =
+            data.observation.email;
+        }
+      } catch (error) {
+        document.getElementById(
+          "status"
+        ).textContent =
+          "Unable to connect to OpenEnv.";
+        console.error(error);
+      }
+    }
+  </script>
+
+</body>
+</html>
